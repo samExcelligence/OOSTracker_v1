@@ -32,30 +32,45 @@ namespace OOSWebScrapper.Models
     }
     public class RgsOutOfStockSelectors : CatalogSelectors
     {
-        // Add the specific selectors for RGS Out of Stock Catalog here
-        public override string ProductGridSelector => "specific RGS product grid selector";
-        public override string NextPageDisabledSelector => "specific RGS next page disabled selector";
-        public override string NextPageLinkSelector => "specific RGS next page link selector";
-        public override string ItemsSelector => "specific RGS items selector";
-        public override string ItemLinkSelector => "specific RGS item link selector";
-        public override string ItemTitleSelector => "specific RGS item title selector";
-        public override string ItemVariationsSelector => "specific RGS item variations selector";
-        public override string ProductDetailsSelector => "specific RGS product details selector";
-        public override string VariationsSelector => "specific RGS variations selector";
+        public override string ProductGridSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > ul";
+
+        public override string NextPageDisabledSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > div.pagination-bar.top > div > div > div.pagination-wrap.hidden-sm.hidden-xs > ul > li.pagination-next.disabled.img-link";
+
+        public override string NextPageLinkSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > div.pagination-bar.top > div > div > div.pagination-wrap.hidden-sm.hidden-xs > ul > li.pagination-next.img-link > a";
+
+        public override string ItemsSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > ul > div.product-item";
+
+        public override string ItemLinkSelector => "a";
+
+        public override string ItemTitleSelector => "a.thumb";
+
+
+        public override string ItemVariationsSelector => "div.details-outer > div > div.colorswatch";
+
+        public override string ProductDetailsSelector => "body > main > div.main__inner-wrapper.container-fluid > div.container.pdp-product-main > div.row.pdp-product-main-wrap > div.col-xs-12.col-sm-6.col-md-6.col-lg-5.right-content > div";
+
+        public override string VariationsSelector => "#priority1";
     }
 
     public class RgsComingSoonSelectors : CatalogSelectors
     {
-        // Add the specific selectors for RGS Coming Soon Catalog here
-        public override string ProductGridSelector => "specific RGS Coming Soon product grid selector";
-        public override string NextPageDisabledSelector => "specific RGS Coming Soon next page disabled selector";
-        public override string NextPageLinkSelector => "specific RGS Coming Soon next page link selector";
-        public override string ItemsSelector => "specific RGS Coming Soon items selector";
-        public override string ItemLinkSelector => "specific RGS Coming Soon item link selector";
-        public override string ItemTitleSelector => "specific RGS Coming Soon item title selector";
-        public override string ItemVariationsSelector => "specific RGS Coming Soon item variations selector";
-        public override string ProductDetailsSelector => "specific RGS Coming Soon product details selector";
-        public override string VariationsSelector => "specific RGS Coming Soon variations selector";
+        public override string ProductGridSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > ul";
+
+        public override string NextPageDisabledSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > div.pagination-bar.top > div > div > div.pagination-wrap.hidden-sm.hidden-xs > ul > li.pagination-next.disabled.img-link";
+
+        public override string NextPageLinkSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > div.pagination-bar.top > div > div > div.pagination-wrap.hidden-sm.hidden-xs > ul > li.pagination-next.img-link > a";
+
+        public override string ItemsSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > ul > div.product-item";
+
+        public override string ItemLinkSelector => "a";
+
+        public override string ItemTitleSelector => "a.thumb";
+
+        public override string ItemVariationsSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > ul > div:nth-child(1) > div.details-outer > div > div.colorswatch.row";
+
+        public override string ProductDetailsSelector => "body > main > div.main__inner-wrapper.container-fluid > div.container.pdp-product-main > div.row.pdp-product-main-wrap > div.col-xs-12.col-sm-6.col-md-6.col-lg-5.right-content > div";
+
+        public override string VariationsSelector => "#priority1";
     }
 
 

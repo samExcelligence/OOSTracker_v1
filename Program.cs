@@ -10,6 +10,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Drawing;
 using OOSWebScraper.models;
+using OOSWebScrapper.Models;
 
 class Program
 {
@@ -28,8 +29,10 @@ class Program
             string chromePath = @"C:\Program Files\Google\Chrome\Application\chrome.exe";
             string targetUrl = string.Empty;
             string catalogName = string.Empty;
+            CatalogSelectors selectors = null;
+            string catalogType = string.Empty;
 
-            Console.WriteLine("Select the catalog to scan: ");
+            Console.WriteLine("Select the catalog to scan:");
             Console.WriteLine("1. Discount School Supply (DSS) Out of Stock Catalog");
             Console.WriteLine("2. Really Good Stuff (RGS) Out of Stock Catalog");
             Console.WriteLine("3. Really Good Stuff (RGS) Coming Soon Catalog");
@@ -41,14 +44,20 @@ class Program
                 case "1":
                     targetUrl = "https://www.discountschoolsupply.com/search/?q=*%3Arelevance%3Abadges%3AOut%2Bof%2BStock&text=*#";
                     catalogName = "DSS_OutOfStock";
+                    selectors = new DssOutOfStockSelectors();
+                    catalogType = "DSS";
                     break;
                 case "2":
                     targetUrl = "https://www.reallygoodstuff.com/search/?q=*%3Arelevance%3Ap_featuredCollection%3AOut%2BOf%2BStock&text=*#";
                     catalogName = "RGS_OutOfStock";
+                    selectors = new RgsOutOfStockSelectors();
+                    catalogType = "RGS";
                     break;
                 case "3":
                     targetUrl = "https://www.reallygoodstuff.com/search/?q=*%3Arelevance%3Ap_featuredCollection%3AComing%2BSoon&text=*#";
                     catalogName = "RGS_ComingSoon";
+                    selectors = new RgsComingSoonSelectors();
+                    catalogType = "RGS";
                     break;
                 default:
                     Console.WriteLine("Invalid choice. Exiting program.");
@@ -56,7 +65,7 @@ class Program
             }
 
             var throttleDelay = 1000;
-            var scraper = new OutOfStockScraper(chromePath, targetUrl, throttleDelay);
+            var scraper = new OutOfStockScraper(chromePath, targetUrl, throttleDelay, selectors, catalogType);
 
             if (File.Exists(CheckpointFile))
             {
@@ -112,8 +121,8 @@ class Program
         }
         finally
         {
-            Console.WriteLine("Press Enter to exit.");
-            Console.ReadLine();
+            Console.WriteLine("Press any key to exit.");
+            Console.ReadKey();
         }
     }
 

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.IO;
 using OOSWebScraper.models;
-
+using OOSWebScrapper.Models;
 
 namespace OOSWebScraper
 {
@@ -15,16 +15,20 @@ namespace OOSWebScraper
         private readonly string _chromePath;
         private readonly string _url;
         private readonly int _throttleDelay;
+        private readonly CatalogSelectors _selectors;
+        private readonly string _catalogType;
         private readonly Random _random = new Random();
         private const int MaxRetries = 3;
         private const string CheckpointFile = "scraper_checkpoint.json";
         private const string PreviousResultsFile = "previous_results.json";
 
-        public OutOfStockScraper(string chromePath, string url, int throttleDelay)
+        public OutOfStockScraper(string chromePath, string url, int throttleDelay, CatalogSelectors selectors, string catalogType)
         {
             _chromePath = chromePath;
             _url = url;
             _throttleDelay = throttleDelay;
+            _selectors = selectors;
+            _catalogType = catalogType;
         }
 
         public async Task<List<OOSItemDetails>> ScrapeOutOfStockItemsAsync()
@@ -70,12 +74,12 @@ namespace OOSWebScraper
                     ExecutablePath = _chromePath,
                     Args = new string[]
                     {
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-web-security",
-                "--disable-features=IsolateOrigins,site-per-process",
-                "--disable-blink-features=AutomationControlled",
-                "--window-size=1920,1080"
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-web-security",
+                        "--disable-features=IsolateOrigins,site-per-process",
+                        "--disable-blink-features=AutomationControlled",
+                        "--window-size=1920,1080"
                     },
                     Timeout = 120000
                 });
@@ -98,11 +102,11 @@ namespace OOSWebScraper
 
                 do
                 {
-                    await mainPage.WaitForSelectorAsync("div.product-grid", new WaitForSelectorOptions { Timeout = 60000 });
+                    await mainPage.WaitForSelectorAsync(_selectors.ProductGridSelector, new WaitForSelectorOptions { Timeout = 60000 });
                     Console.WriteLine("Navigation completed and product grid loaded.");
 
-                    var nextPageDisabledJsPath = "document.querySelector('main div.product-grid div.grid-content div.pagination-bar.top div.pagination-wrap.hidden-sm.hidden-xs ul > li.pagination-next.disabled.img-link')";
-                    var nextPageJsPath = "document.querySelector('main div.product-grid div.grid-content div.pagination-bar.top div.pagination-wrap.hidden-sm.hidden-xs ul > li.pagination-next.img-link > a')";
+                    var nextPageDisabledJsPath = $"document.querySelector('{_selectors.NextPageDisabledSelector}')";
+                    var nextPageJsPath = $"document.querySelector('{_selectors.NextPageLinkSelector}')";
                     hasNextPage = !await mainPage.EvaluateExpressionAsync<bool>($"{nextPageDisabledJsPath} !== null");
                     Console.WriteLine($"HAS NEXT PAGE: {hasNextPage}");
 
@@ -113,27 +117,51 @@ namespace OOSWebScraper
                         Console.WriteLine($"Next page URL: {nextPageUrl}");
                     }
 
-
                     var parentItems = new List<(string URL, string Title, bool HasVariations, int Position)>();
                     for (int attempt = 0; attempt < 3; attempt++)
                     {
                         try
                         {
-                            var itemElements = await mainPage.QuerySelectorAllAsync("body > main > div.container.main__inner-wrapper > div.product-grid > div.grid-content > div > ul > div.product-item");
+                            var itemElements = await mainPage.QuerySelectorAllAsync(_selectors.ItemsSelector);
                             int itemCount = itemElements.Count();
                             for (int i = 0; i < itemCount; i++)
                             {
                                 var itemElement = itemElements[i];
                                 try
                                 {
-                                    var linkElement = await itemElement.QuerySelectorAsync("a");
+                                    var linkElement = await itemElement.QuerySelectorAsync(_selectors.ItemLinkSelector);
                                     var url = await linkElement.EvaluateFunctionAsync<string>("link => link.href");
 
-                                    var titleElement = await itemElement.QuerySelectorAsync("div.details-outer > div > div.details-inner > a > span");
-                                    var title = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.innerText.trim()") : string.Empty;
+                                    var titleElement = await itemElement.QuerySelectorAsync(_selectors.ItemTitleSelector);
+                                    string title;
 
-                                    var hasVariations = await itemElement.EvaluateFunctionAsync<bool>("item => item.querySelector('div.details-outer > div > div.colorswatch')?.querySelectorAll('span').length > 0");
+                                    if (_catalogType == "DSS")
+                                    {
+                                        title = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.innerText.trim()") : string.Empty;
+                                    }
+                                    else if (_catalogType == "RGS")
+                                    {
+                                        title = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.getAttribute('title')") : string.Empty;
+                                    }
+                                    else
+                                    {
+                                        title = "no title found"; // Default case if needed
+                                    }
 
+                                    bool hasVariations;
+
+                                    if (_catalogType == "DSS")
+                                    {
+                                        hasVariations = await itemElement.EvaluateFunctionAsync<bool>($"item => item.querySelector('{_selectors.ItemVariationsSelector}')?.querySelectorAll('span').length > 0");
+                                    }
+                                    else if (_catalogType == "RGS")
+                                    {
+                                        hasVariations = await itemElement.EvaluateFunctionAsync<bool>($"item => item.querySelector('div.details-outer > div > div.colorswatch.row span label a') !== null");
+                                    }
+                                    else
+                                    {
+                                        hasVariations = false; // Default case if needed
+                                    }
                                     var position = i + 1;
 
                                     parentItems.Add((url, title, hasVariations, position));
@@ -163,10 +191,24 @@ namespace OOSWebScraper
                         {
                             try
                             {
+                                string upid;
+                                if (_catalogType == "DSS")
+                                {
+                                    upid = itemUrl.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty;
+                                }
+                                else if (_catalogType == "RGS")
+                                {
+                                    upid = (itemUrl.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
+                                }
+                                else
+                                {
+                                    upid = string.Empty; // Default case if needed
+                                }
+
                                 var itemDetails = new OOSItemDetails
                                 {
                                     ItemName = itemTitle,
-                                    UPID = itemUrl.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty,
+                                    UPID = upid,
                                     StockStatus = "Out of Stock",
                                     RetrievedAt = DateTime.UtcNow,
                                     PageNumber = pageNumber + 1,
@@ -225,40 +267,99 @@ namespace OOSWebScraper
 
                                     if (navigated)
                                     {
-                                        await itemPage.WaitForSelectorAsync("div.product-details", new WaitForSelectorOptions { Timeout = 60000 });
+                                        await itemPage.WaitForSelectorAsync(_selectors.ProductDetailsSelector, new WaitForSelectorOptions { Timeout = 60000 });
 
-                                        var variationElements = await itemPage.QuerySelectorAllAsync("body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.product-option > ul > li");
+                                        var variationElements = await itemPage.QuerySelectorAllAsync("#priority1 > label");
+                                        Console.WriteLine("Variations found:");
 
-                                        int outOfStockCount = 0;
                                         foreach (var element in variationElements)
                                         {
-                                            var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.classList.contains('opacity')");
-                                            if (isOutOfStock) outOfStockCount++;
+                                            var variationNameElement = await element.QuerySelectorAsync("span");
+                                            var variationName = variationNameElement != null ? await variationNameElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
+
+                                            var variationHrefElement = await element.QuerySelectorAsync("input[type='radio']");
+                                            var variationHref = variationHrefElement != null ? await variationHrefElement.EvaluateFunctionAsync<string>("el => el.value") : string.Empty;
+                                            var variationUpid = (variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
+
+                                            Console.WriteLine($"Variation Name: {variationName}");
+                                            Console.WriteLine($"Variation URL: {variationHref}");
+                                            Console.WriteLine($"Variation UPID: {variationUpid}");
+                                            Console.WriteLine(new string('-', 50));  // Separator line for better readability
                                         }
-
-                                        bool isTotallyOutOfStock = outOfStockCount == variationElements.Length;
-                                        itemDetails.StockStatus = isTotallyOutOfStock ? "Out of Stock" : "Partially Out of Stock";
-                                        Console.WriteLine($"Parent item is {itemDetails.StockStatus.ToLower()}.");
-
-                                        foreach (var element in variationElements)
+                                        if (_catalogType == "RGS")
                                         {
-                                            await Task.Delay(2000);
-                                            var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.classList.contains('opacity')");
-                                            if (isOutOfStock)
+                                            // Handle RGS specific variation logic
+                                            int outOfStockCount = 0;
+                                            foreach (var element in variationElements)
                                             {
-                                                var variationName = await element.EvaluateFunctionAsync<string>("el => el.innerText");
-                                                var variationHref = await element.EvaluateFunctionAsync<string>("el => el.querySelector('a').href");
-                                                var variationUpid = variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty;
+                                                var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.querySelector('span.custom-radio-btn.opacity') !== null");
+                                                if (isOutOfStock) outOfStockCount++;
+                                            }
 
-                                                Console.WriteLine($"Found out-of-stock variation: {variationName}");
+                                            bool isTotallyOutOfStock = outOfStockCount == variationElements.Length;
+                                            itemDetails.StockStatus = isTotallyOutOfStock ? "Out of Stock" : "Partially Out of Stock";
+                                            Console.WriteLine($"Parent item is {itemDetails.StockStatus.ToLower()}.");
 
-                                                itemDetails.Variations.Add(new Variation
+                                            foreach (var element in variationElements)
+                                            {
+                                                await Task.Delay(2000);
+                                                var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.querySelector('span.custom-radio-btn.opacity') !== null");
+                                                if (isOutOfStock)
                                                 {
-                                                    Name = variationName,
-                                                    IsOutOfStock = true,
-                                                    UPID = variationUpid,
-                                                    StockStatus = "Out of Stock"
-                                                });
+                                                    // Extract the variation name from the span element containing the inner text
+                                                    var variationNameElement = await element.QuerySelectorAsync("label > span");
+                                                    var variationName = variationNameElement != null ? await variationNameElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
+
+                                                    var variationHrefElement = await element.QuerySelectorAsync("span.variantURL");
+                                                    var variationHref = variationHrefElement != null ? await variationHrefElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
+                                                    var variationUpid = (variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
+
+                                                    Console.WriteLine($"Found out-of-stock variation: {variationName}");
+
+                                                    itemDetails.Variations.Add(new Variation
+                                                    {
+                                                        Name = variationName,
+                                                        IsOutOfStock = true,
+                                                        UPID = variationUpid,
+                                                        StockStatus = "Out of Stock"
+                                                    });
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Handle DSS specific variation logic
+                                            int outOfStockCount = 0;
+                                            foreach (var element in variationElements)
+                                            {
+                                                var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.classList.contains('opacity')");
+                                                if (isOutOfStock) outOfStockCount++;
+                                            }
+
+                                            bool isTotallyOutOfStock = outOfStockCount == variationElements.Length;
+                                            itemDetails.StockStatus = isTotallyOutOfStock ? "Out of Stock" : "Partially Out of Stock";
+                                            Console.WriteLine($"Parent item is {itemDetails.StockStatus.ToLower()}.");
+
+                                            foreach (var element in variationElements)
+                                            {
+                                                await Task.Delay(2000);
+                                                var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.classList.contains('opacity')");
+                                                if (isOutOfStock)
+                                                {
+                                                    var variationName = await element.EvaluateFunctionAsync<string>("el => el.innerText");
+                                                    var variationHref = await element.EvaluateFunctionAsync<string>("el => el.querySelector('a').href");
+                                                    var variationUpid = variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty;
+
+                                                    Console.WriteLine($"Found out-of-stock variation: {variationName}");
+
+                                                    itemDetails.Variations.Add(new Variation
+                                                    {
+                                                        Name = variationName,
+                                                        IsOutOfStock = true,
+                                                        UPID = variationUpid,
+                                                        StockStatus = "Out of Stock"
+                                                    });
+                                                }
                                             }
                                         }
                                     }
@@ -301,7 +402,7 @@ namespace OOSWebScraper
                             WaitUntil = new[] { WaitUntilNavigation.DOMContentLoaded }
                         });
                         Console.WriteLine($"Successfully navigated to page {pageNumber}.");
-                        pageNumber++;                       
+                        pageNumber++;
                         Console.WriteLine($"Throttling for {_throttleDelay} milliseconds...");
                         await Task.Delay(_throttleDelay + _random.Next(0, 1000));
                     }
@@ -328,10 +429,6 @@ namespace OOSWebScraper
 
             return outOfStockItems;
         }
-
-
-
-
 
         private void SaveCheckpoint(int pageNumber, int position, int itemCount)
         {
