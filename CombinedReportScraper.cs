@@ -1,70 +1,52 @@
-﻿using System;
+﻿using OOSWebScraper.models;
+using OOSWebScraper;
+using OOSWebScrapper.Models;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using PuppeteerSharp;
-using System.Linq;
-using System.Text.Json;
-using System.IO;
-using OOSWebScraper.models;
-using OOSWebScrapper.Models;
 
-namespace OOSWebScraper
+namespace OOSWebScrapper
 {
-    public class OutOfStockScraper
+    public class CombinedReportScraper
     {
         private readonly string _chromePath;
-        private readonly string _url;
         private readonly int _throttleDelay;
-        private readonly string _catalogName;
         private readonly CatalogSelectors _selectors;
         private readonly string _catalogType;
         private readonly Random _random = new Random();
         private const int MaxRetries = 3;
-        private const string CheckpointFile = "scraper_checkpoint.json";
-        private const string PreviousResultsFile = "previous_results.json";
 
-        public OutOfStockScraper(string chromePath, string url, int throttleDelay, CatalogSelectors selectors, string catalogType, string catalogName)
+        public CombinedReportScraper(string chromePath, int throttleDelay, CatalogSelectors selectors, string catalogType)
         {
             _chromePath = chromePath;
-            _url = url;
             _throttleDelay = throttleDelay;
             _selectors = selectors;
             _catalogType = catalogType;
-            _catalogName = catalogName;
         }
 
-        public async Task<List<OOSItemDetails>> ScrapeOutOfStockItemsAsync()
+        public async Task<List<OOSItemDetails>> ScrapeCombinedItemsAsync(List<(string url, string badge, string stockStatus)> categories)
         {
-            var outOfStockItems = new List<OOSItemDetails>();
+            var combinedItems = new List<OOSItemDetails>();
+
+            foreach (var (url, badge, stockStatus) in categories)
+            {
+                var items = await ScrapeItemsAsync(url, badge, stockStatus);
+                combinedItems.AddRange(items);
+            }
+
+            return combinedItems;
+        }
+
+        private async Task<List<OOSItemDetails>> ScrapeItemsAsync(string url, string badge, string stockStatus)
+        {
+            var items = new List<OOSItemDetails>();
             IBrowser browser = null;
             IPage mainPage = null;
             IPage itemPage = null;
-            int startPage = 0;
-            int startPosition = 0;
-
-            if (File.Exists(CheckpointFile))
-            {
-                Console.WriteLine("Checkpoint file found. Do you want to resume from the last saved position? (Y/N)");
-                if (Console.ReadKey().Key == ConsoleKey.Y)
-                {
-                    var checkpoint = JsonSerializer.Deserialize<ScraperCheckpoint>(File.ReadAllText(CheckpointFile));
-                    startPage = checkpoint.LastPageScraped;
-                    startPosition = checkpoint.LastPositionScraped;
-                    Console.WriteLine($"\nResuming from page {startPage}, position {startPosition}");
-
-                    if (File.Exists(PreviousResultsFile))
-                    {
-                        outOfStockItems = JsonSerializer.Deserialize<List<OOSItemDetails>>(File.ReadAllText(PreviousResultsFile));
-                        Console.WriteLine($"Loaded {outOfStockItems.Count} previously scraped items.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("\nStarting from the beginning.");
-                    File.Delete(CheckpointFile);
-                    File.Delete(PreviousResultsFile);
-                }
-            }
+            int pageNumber = 0;
 
             try
             {
@@ -98,9 +80,8 @@ namespace OOSWebScraper
                 await mainPage.EvaluateExpressionAsync(@"navigator.webdriver = undefined");
 
                 bool hasNextPage;
-                int pageNumber = startPage;
-                Console.WriteLine($"Navigating to {_url} (page {pageNumber + 1})...");
-                await mainPage.GoToAsync($"{_url}&page={pageNumber}&pageSize=");
+                Console.WriteLine($"Navigating to {url} (page {pageNumber + 1})...");
+                await mainPage.GoToAsync($"{url}&page={pageNumber}&pageSize=");
 
                 do
                 {
@@ -132,22 +113,22 @@ namespace OOSWebScraper
                                 try
                                 {
                                     var linkElement = await itemElement.QuerySelectorAsync(_selectors.ItemLinkSelector);
-                                    var url = await linkElement.EvaluateFunctionAsync<string>("link => link.href");
+                                    var itemUrl = await linkElement.EvaluateFunctionAsync<string>("link => link.href");
 
                                     var titleElement = await itemElement.QuerySelectorAsync(_selectors.ItemTitleSelector);
-                                    string title;
+                                    string itemTitle;
 
                                     if (_catalogType == "DSS")
                                     {
-                                        title = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.innerText.trim()") : string.Empty;
+                                        itemTitle = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.innerText.trim()") : string.Empty;
                                     }
                                     else if (_catalogType == "RGS")
                                     {
-                                        title = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.getAttribute('title')") : string.Empty;
+                                        itemTitle = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.getAttribute('title')") : string.Empty;
                                     }
                                     else
                                     {
-                                        title = "no title found"; // Default case if needed
+                                        itemTitle = "no title found"; // Default case if needed
                                     }
 
                                     bool hasVariations;
@@ -166,7 +147,7 @@ namespace OOSWebScraper
                                     }
                                     var position = i + 1;
 
-                                    parentItems.Add((url, title, hasVariations, position));
+                                    parentItems.Add((itemUrl, itemTitle, hasVariations, position));
                                 }
                                 catch (Exception ex)
                                 {
@@ -185,7 +166,7 @@ namespace OOSWebScraper
 
                     Console.WriteLine($"**Found {parentItems.Count} parent items on page {pageNumber + 1}.");
 
-                    for (int i = (pageNumber == startPage ? startPosition : 0); i < parentItems.Count; i++)
+                    for (int i = 0; i < parentItems.Count; i++)
                     {
                         var (itemUrl, itemTitle, hasVariations, position) = parentItems[i];
 
@@ -211,8 +192,8 @@ namespace OOSWebScraper
                                 {
                                     ItemName = itemTitle,
                                     UPID = upid,
-                                    Badge = "Out of Stock",
-                                    StockStatus = "Out of Stock",
+                                    Badge = badge,
+                                    StockStatus = stockStatus,
                                     RetrievedAt = DateTime.UtcNow,
                                     PageNumber = pageNumber + 1,
                                     PositionOnPage = position,
@@ -272,7 +253,6 @@ namespace OOSWebScraper
                                     {
                                         await itemPage.WaitForSelectorAsync(_selectors.ProductDetailsSelector, new WaitForSelectorOptions { Timeout = 60000 });
 
-
                                         if (_catalogType == "RGS")
                                         {
                                             var variationElements = await itemPage.QuerySelectorAllAsync("#priority1 > label");
@@ -292,43 +272,29 @@ namespace OOSWebScraper
                                                 //Console.WriteLine($"Variation UPID: {variationUpid}");
                                                 //Console.WriteLine(new string('-', 50));  // Separator line for better readability
                                             }
-                                            // Handle RGS specific variation logic
-                                            int outOfStockCount = 0;
-                                            foreach (var element in variationElements)
-                                            {
-                                                var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.querySelector('span.custom-radio-btn.opacity') !== null");
-                                                if (isOutOfStock) outOfStockCount++;
-                                            }
-
-                                            bool isTotallyOutOfStock = outOfStockCount == variationElements.Length;
-                                            itemDetails.StockStatus = isTotallyOutOfStock ? "Out of Stock" : "Partially Out of Stock";
-                                            Console.WriteLine($"Parent item is {itemDetails.StockStatus.ToLower()}.");
 
                                             foreach (var element in variationElements)
                                             {
                                                 await Task.Delay(2000);
                                                 var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.querySelector('span.custom-radio-btn.opacity') !== null");
-                                                if (isOutOfStock)
+
+                                                var variationNameElement = await element.QuerySelectorAsync("label > span");
+                                                var variationName = variationNameElement != null ? await variationNameElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
+
+                                                var variationHrefElement = await element.QuerySelectorAsync("span.variantURL");
+                                                var variationHref = variationHrefElement != null ? await variationHrefElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
+                                                var variationUpid = (variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
+
+                                                Console.WriteLine($"Found variation: {variationName}");
+
+                                                itemDetails.Variations.Add(new Variation
                                                 {
-                                                    // Extract the variation name from the span element containing the inner text
-                                                    var variationNameElement = await element.QuerySelectorAsync("label > span");
-                                                    var variationName = variationNameElement != null ? await variationNameElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
-
-                                                    var variationHrefElement = await element.QuerySelectorAsync("span.variantURL");
-                                                    var variationHref = variationHrefElement != null ? await variationHrefElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
-                                                    var variationUpid = (variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
-
-                                                    Console.WriteLine($"Found out-of-stock variation: {variationName}");
-
-                                                    itemDetails.Variations.Add(new Variation
-                                                    {
-                                                        Name = variationName,
-                                                        Badge = "Out of Stock",
-                                                        IsOutOfStock = true,
-                                                        UPID = variationUpid,
-                                                        StockStatus = "Out of Stock"
-                                                    });
-                                                }
+                                                    Name = variationName,
+                                                    Badge = badge,
+                                                    IsOutOfStock = isOutOfStock,
+                                                    UPID = variationUpid,
+                                                    StockStatus = isOutOfStock ? "Out of Stock" : stockStatus
+                                                });
                                             }
                                         }
                                         else
@@ -350,45 +316,32 @@ namespace OOSWebScraper
                                                 //Console.WriteLine($"Variation UPID: {variationUpid}");
                                                 //Console.WriteLine(new string('-', 50));  // Separator line for better readability
                                             }
-                                            // Handle DSS specific variation logic
-                                            int outOfStockCount = 0;
-                                            foreach (var element in variationElements)
-                                            {
-                                                var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.classList.contains('opacity')");
-                                                if (isOutOfStock) outOfStockCount++;
-                                            }
-
-                                            bool isTotallyOutOfStock = outOfStockCount == variationElements.Length;
-                                            itemDetails.StockStatus = isTotallyOutOfStock ? "Out of Stock" : "Partially Out of Stock";
-                                            Console.WriteLine($"Parent item is {itemDetails.StockStatus.ToLower()}.");
 
                                             foreach (var element in variationElements)
                                             {
                                                 await Task.Delay(2000);
                                                 var isOutOfStock = await element.EvaluateFunctionAsync<bool>("el => el.classList.contains('opacity')");
-                                                if (isOutOfStock)
+
+                                                var variationName = await element.EvaluateFunctionAsync<string>("el => el.innerText");
+                                                var variationHref = await element.EvaluateFunctionAsync<string>("el => el.querySelector('a').href");
+                                                var variationUpid = variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty;
+
+                                                Console.WriteLine($"Found variation: {variationName}");
+
+                                                itemDetails.Variations.Add(new Variation
                                                 {
-                                                    var variationName = await element.EvaluateFunctionAsync<string>("el => el.innerText");
-                                                    var variationHref = await element.EvaluateFunctionAsync<string>("el => el.querySelector('a').href");
-                                                    var variationUpid = variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty;
-
-                                                    Console.WriteLine($"Found out-of-stock variation: {variationName}");
-
-                                                    itemDetails.Variations.Add(new Variation
-                                                    {
-                                                        Name = variationName,
-                                                        Badge = "Out of Stock",
-                                                        IsOutOfStock = true,
-                                                        UPID = variationUpid,
-                                                        StockStatus = "Out of Stock"
-                                                    });
-                                                }
+                                                    Name = variationName,
+                                                    Badge = badge,
+                                                    IsOutOfStock = isOutOfStock,
+                                                    UPID = variationUpid,
+                                                    StockStatus = isOutOfStock ? "Out of Stock" : stockStatus
+                                                });
                                             }
                                         }
                                     }
                                 }
 
-                                outOfStockItems.Add(itemDetails);
+                                items.Add(itemDetails);
                                 Console.WriteLine(new string('*', 72));
                                 Console.WriteLine($"Scanned item on Page {pageNumber + 1}: {itemDetails.ItemName}");
                                 Console.WriteLine($"UPID: {itemDetails.UPID}, Position: {itemDetails.PositionOnPage}");
@@ -398,9 +351,6 @@ namespace OOSWebScraper
                                 {
                                     Console.WriteLine($"Scanned variation item: {item.Name}, UPID: {item.UPID}");
                                 }
-
-                                SaveCheckpoint(pageNumber, i, outOfStockItems.Count);
-                                SaveResults(outOfStockItems);
 
                                 Console.WriteLine($"Throttling for {_throttleDelay} milliseconds...");
                                 await Task.Delay(_throttleDelay + _random.Next(0, 1000));
@@ -450,33 +400,7 @@ namespace OOSWebScraper
                 }
             }
 
-            return outOfStockItems;
+            return items;
         }
-
-        private void SaveCheckpoint(int pageNumber, int position, int itemCount)
-        {
-            var checkpoint = new ScraperCheckpoint
-            {
-                LastPageScraped = pageNumber,
-                LastPositionScraped = position,
-                TotalItemsScraped = itemCount
-            };
-
-            string json = JsonSerializer.Serialize(checkpoint);
-            File.WriteAllText(CheckpointFile, json);
-        }
-
-        private void SaveResults(List<OOSItemDetails> items)
-        {
-            string json = JsonSerializer.Serialize(items);
-            File.WriteAllText(PreviousResultsFile, json);
-        }
-    }
-
-    public class ScraperCheckpoint
-    {
-        public int LastPageScraped { get; set; }
-        public int LastPositionScraped { get; set; }
-        public int TotalItemsScraped { get; set; }
     }
 }

@@ -121,6 +121,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CombinedReportScraper.cs" />
     <Compile Include="Models\CatalogSelectors.cs" />
     <Compile Include="Models\OOSItem.cs" />
     <Compile Include="OutOfStockScrapper.cs" />

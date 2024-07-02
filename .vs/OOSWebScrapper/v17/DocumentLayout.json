@@ -3,16 +3,24 @@
   "WorkspaceRootPath": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\outofstockscrapper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|solutionrelative:outofstockscrapper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|c:\\users\\sespinoza\\onedrive - excelligence\\source\\repos\\ooswebscrapper\\combinedreportscraper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|solutionrelative:combinedreportscraper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|c:\\users\\sespinoza\\onedrive - excelligence\\source\\repos\\ooswebscrapper\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\models\\catalogselectors.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|solutionrelative:models\\catalogselectors.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|c:\\users\\sespinoza\\onedrive - excelligence\\source\\repos\\ooswebscrapper\\outofstockscrapper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|solutionrelative:outofstockscrapper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|c:\\users\\sespinoza\\onedrive - excelligence\\source\\repos\\ooswebscrapper\\models\\oositem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F71DC69D-FA61-42C3-93BD-2374B2188FA2}|OOSWebScrapper.csproj|solutionrelative:models\\oositem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,26 +38,52 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "OOSItem.cs",
+              "DocumentMoniker": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\Models\\OOSItem.cs",
+              "RelativeDocumentMoniker": "Models\\OOSItem.cs",
+              "ToolTip": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\Models\\OOSItem.cs",
+              "RelativeToolTip": "Models\\OOSItem.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAB8AAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-07-02T20:07:21.417Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "CombinedReportScraper.cs",
+              "DocumentMoniker": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\CombinedReportScraper.cs",
+              "RelativeDocumentMoniker": "CombinedReportScraper.cs",
+              "ToolTip": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\CombinedReportScraper.cs",
+              "RelativeToolTip": "CombinedReportScraper.cs",
+              "ViewState": "AQIAAO8AAAAAAAAAAAAwwB0AAABnAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-07-02T19:56:45.134Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 2,
               "Title": "CatalogSelectors.cs",
               "DocumentMoniker": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\Models\\CatalogSelectors.cs",
               "RelativeDocumentMoniker": "Models\\CatalogSelectors.cs",
               "ToolTip": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\Models\\CatalogSelectors.cs",
               "RelativeToolTip": "Models\\CatalogSelectors.cs",
-              "ViewState": "AQIAACMAAAAAAAAAAAAwwCwAAAA+AAAA",
+              "ViewState": "AQIAAAwAAAAAAAAAAAA8wA8AAAA5AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-06-25T18:40:01.287Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 3,
               "Title": "OutOfStockScrapper.cs",
               "DocumentMoniker": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\OutOfStockScrapper.cs",
               "RelativeDocumentMoniker": "OutOfStockScrapper.cs",
               "ToolTip": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\OutOfStockScrapper.cs",
               "RelativeToolTip": "OutOfStockScrapper.cs",
-              "ViewState": "AQIAAE0BAAAAAAAAAAAYwKEAAAAMAAAA",
+              "ViewState": "AQIAALsAAAAAAAAAAAAAAN8AAAAyAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-06-24T16:37:08.032Z",
               "EditorCaption": ""
@@ -62,7 +96,7 @@
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "C:\\Users\\sespinoza\\OneDrive - Excelligence\\source\\repos\\OOSWebScrapper\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AQIAAF8AAAAAAAAAAAAwwNQAAAAZAAAA",
+              "ViewState": "AQIAAD0AAAAAAAAAAAAgwCMAAABSAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-06-24T16:20:24.13Z",
               "EditorCaption": ""

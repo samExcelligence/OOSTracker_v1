@@ -10,6 +10,7 @@ namespace OOSWebScraper.models
     {
         public string ItemName { get; set; }
         public string UPID { get; set; }
+        public string Badge{ get; set; }
         public string StockStatus { get; set; }
         public DateTime RetrievedAt { get; set; }
         public int PageNumber { get; set; }
@@ -22,6 +23,7 @@ namespace OOSWebScraper.models
     public class Variation
     {
         public string Name { get; set; }
+        public string Badge { get; set; }
         public bool IsOutOfStock { get; set; }
         public string UPID { get; set; }
         public string StockStatus { get; set; }
