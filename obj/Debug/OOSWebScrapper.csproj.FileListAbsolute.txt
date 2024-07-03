@@ -52,3 +52,15 @@ C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug
 C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\System.Text.Json.dll
 C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\System.Text.Encodings.Web.xml
 C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\System.Text.Json.xml
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\ClosedXML.dll
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\DocumentFormat.OpenXml.dll
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\ExcelNumberFormat.dll
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\Irony.dll
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\SixLabors.Fonts.dll
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\System.IO.Packaging.dll
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\XLParser.dll
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\ClosedXML.xml
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\DocumentFormat.OpenXml.xml
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\ExcelNumberFormat.xml
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\SixLabors.Fonts.xml
+C:\Users\sespinoza\OneDrive - Excelligence\source\repos\OOSWebScrapper\bin\Debug\System.IO.Packaging.xml
