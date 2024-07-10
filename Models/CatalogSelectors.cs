@@ -10,6 +10,7 @@ namespace OOSWebScrapper.Models
     {
         public abstract string ProductGridSelector { get; }
         public abstract string NextPageDisabledSelector { get; }
+        public abstract string OutOfStockBadgeSelector { get; }
         public abstract string NextPageLinkSelector { get; }
         public abstract string ItemsSelector { get; }
         public abstract string ItemLinkSelector { get; }
@@ -28,6 +29,7 @@ namespace OOSWebScrapper.Models
     }
     public class DssCatalogSelectors : CatalogSelectors
     {
+        public override string OutOfStockBadgeSelector => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.qty-limited";
         public override string ProductGridSelector => "div.product-grid";
         public override string NextPageDisabledSelector => "main div.product-grid div.grid-content div.pagination-bar.top div.pagination-wrap.hidden-sm.hidden-xs ul > li.pagination-next.disabled.img-link";
         public override string NextPageLinkSelector => "main div.product-grid div.grid-content div.pagination-bar.top div.pagination-wrap.hidden-sm.hidden-xs ul > li.pagination-next.img-link > a";
@@ -47,6 +49,7 @@ namespace OOSWebScrapper.Models
     }
     public class RgsCatalogSelectors : CatalogSelectors
     {
+        public override string OutOfStockBadgeSelector => throw new NotImplementedException();
         public override string ProductGridSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > ul";
 
         public override string NextPageDisabledSelector => "body > main > div.main__inner-wrapper.container-fluid > div.product-grid > div.grid-content > div > div.pagination-bar.top > div > div > div.pagination-wrap.hidden-sm.hidden-xs > ul > li.pagination-next.disabled.img-link";

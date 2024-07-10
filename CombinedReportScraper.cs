@@ -44,7 +44,7 @@ namespace OOSWebScrapper
 
             return combinedItems;
         }
-
+        
         private async Task<List<OOSItemDetails>> ScrapeItemsAsync(string url, string badge, string stockStatus)
         {
             var items = new List<OOSItemDetails>();
@@ -75,10 +75,8 @@ namespace OOSWebScrapper
 
                 Console.WriteLine("Browser started successfully.");
 
-                mainPage = await browser.NewPageAsync();
-                itemPage = await browser.NewPageAsync();
-                mainPage.DefaultNavigationTimeout = 120000;
-                itemPage.DefaultNavigationTimeout = 120000;
+                mainPage = await CreatePageAsync(browser);
+                itemPage = await CreatePageAsync(browser);
 
                 await mainPage.SetUserAgentAsync("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
                 await mainPage.SetViewportAsync(new ViewPortOptions { Width = 1920, Height = 1080 });
@@ -282,6 +280,7 @@ namespace OOSWebScrapper
                                                     Name = variationName,
                                                     Badge = badge,
                                                     IsOutOfStock = isOutOfStock,
+                                                    ParentUPID = itemDetails.UPID,
                                                     UPID = variationUpid,
                                                     StockStatus = isOutOfStock ? "Out of Stock" : stockStatus
                                                 });
@@ -317,6 +316,8 @@ namespace OOSWebScrapper
                                 }
 
                                 items.Add(itemDetails);
+                                await ClosePageAsync(itemPage);
+                                itemPage = await CreatePageAsync(browser);
                                 Console.WriteLine(new string('*', 72));
                                 Console.WriteLine($"Scanned item on Page {pageNumber + 1}: {itemDetails.ItemName}");
                                 Console.WriteLine($"UPID: {itemDetails.UPID}, Position: {itemDetails.PositionOnPage}");
@@ -349,6 +350,9 @@ namespace OOSWebScrapper
                     }
                     else if (hasNextPage && !string.IsNullOrEmpty(nextPageUrl))
                     {
+                        // Before navigating to the next page
+                        await ClosePageAsync(itemPage);
+                        itemPage = await CreatePageAsync(browser);
                         Console.WriteLine($"Navigating to {nextPageUrl} (page {pageNumber})...");
                         await mainPage.GoToAsync(nextPageUrl, new NavigationOptions
                         {
@@ -373,6 +377,10 @@ namespace OOSWebScrapper
             }
             finally
             {
+                // Close all pages
+                if (mainPage != null) await ClosePageAsync(mainPage);
+                if (itemPage != null) await ClosePageAsync(itemPage);
+
                 if (browser != null)
                 {
                     await browser.CloseAsync();
@@ -381,6 +389,21 @@ namespace OOSWebScrapper
             }
 
             return items;
+        }
+        private async Task<IPage> CreatePageAsync(IBrowser browser)
+        {
+            var page = await browser.NewPageAsync();
+            page.DefaultNavigationTimeout = 120000;
+            return page;
+        }
+
+        private async Task ClosePageAsync(IPage page)
+        {
+            if (page != null)
+            {
+                await page.CloseAsync();
+                await page.DisposeAsync();
+            }
         }
     }
 }

@@ -22,6 +22,7 @@ namespace OOSWebScraper.models
         public string Name { get; set; }
         public bool IsOutOfStock { get; set; }
         public string UPID { get; set; }
+        public string ParentUPID {  get; set; }
         public string StockStatus { get; set; }
         public string Badge { get; set; }
     }

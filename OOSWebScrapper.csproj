@@ -187,8 +187,10 @@
     <Compile Include="Models\CatalogSelectors.cs" />
     <Compile Include="Models\OOSItem.cs" />
     <Compile Include="OutOfStockScrapper.cs" />
+    <Compile Include="PageNavigator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ScraperInitializer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

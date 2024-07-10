@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.IO;
 using OOSWebScraper.models;
 using OOSWebScrapper.Models;
+using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace OOSWebScraper
 {
@@ -16,8 +17,11 @@ namespace OOSWebScraper
     Notes: Initializes with browser settings, navigation URLs, and various configuration options.
     Developer Name: Sam Espinoza
     ************************************************************************************/
+    
+    
     public class OutOfStockScraper
     {
+
         private readonly string _chromePath;
         private readonly string _url;
         private readonly int _throttleDelay;
@@ -117,15 +121,10 @@ namespace OOSWebScraper
                 Name: Page Initialization
                 Purpose: Initializes multiple browser pages for concurrent navigation and scraping.
                 ************************************************************************************/
-                mainPage = await browser.NewPageAsync();
-                itemPage = await browser.NewPageAsync();
-                dropdownPage = await browser.NewPageAsync();
-                innerDropdownPage = await browser.NewPageAsync();
-                mainPage.DefaultNavigationTimeout = 120000;
-                itemPage.DefaultNavigationTimeout = 120000;
-                dropdownPage.DefaultNavigationTimeout = 120000;
-                innerDropdownPage.DefaultNavigationTimeout = 120000;
-
+                mainPage = await CreatePageAsync(browser);
+                itemPage = await CreatePageAsync(browser);
+                dropdownPage = await CreatePageAsync(browser);
+                innerDropdownPage = await CreatePageAsync(browser);
 
                 await mainPage.SetUserAgentAsync("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
                 await mainPage.SetViewportAsync(new ViewPortOptions { Width = 1920, Height = 1080 });
@@ -391,6 +390,7 @@ namespace OOSWebScraper
                                                         Name = variationName,
                                                         Badge = "Out of Stock",
                                                         IsOutOfStock = true,
+                                                        ParentUPID = itemDetails.UPID,
                                                         UPID = variationUpid,
                                                         StockStatus = "Out of Stock"
                                                     });
@@ -412,6 +412,7 @@ namespace OOSWebScraper
                                             int totalComboCount = 0;
                                             bool isVariationAndCombo = false;
                                             bool isAssembly = false;
+
                                             if (variationElements.Any() && comboDropListElements.Any())
                                             {
                                                 isVariationAndCombo = true;
@@ -507,6 +508,8 @@ namespace OOSWebScraper
 
                                                                             if (isOutOfStock)
                                                                             {
+                                                                                var dropdownHref = await innerDropdownPage.EvaluateFunctionAsync<string>("() => window.location.href");
+                                                                                var dropdownUpid = (dropdownHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
                                                                                 Console.WriteLine($"Found out-of-stock variation: Color - {colorName}, Size - {optionText}");
 
                                                                                 itemDetails.Variations.Add(new Variation
@@ -514,7 +517,8 @@ namespace OOSWebScraper
                                                                                     Name = $"{colorName} - {optionText}",
                                                                                     Badge = "Out of Stock",
                                                                                     IsOutOfStock = true,
-                                                                                    UPID = colorUpid, // Assuming UPID stays the same for dropdown variations
+                                                                                    ParentUPID = itemDetails.UPID,
+                                                                                    UPID = dropdownUpid, // Assuming UPID stays the same for dropdown variations
                                                                                     StockStatus = "Out of Stock"
                                                                                 });
 
@@ -538,6 +542,10 @@ namespace OOSWebScraper
                                                         Console.WriteLine($"Error processing color variation: {ex.Message}");
                                                     }
                                                 }
+
+                                                // After the color variation loop
+                                                await ClosePageAsync(dropdownPage);
+                                                dropdownPage = await CreatePageAsync(browser);
                                             }
                                             else if (dropListElements.Any())
                                             {
@@ -634,6 +642,8 @@ namespace OOSWebScraper
 
                                                                 if (isOutOfStock)
                                                                 {
+                                                                    var dropdownHref = await dropdownPage.EvaluateFunctionAsync<string>("() => window.location.href");
+                                                                    var dropdownUpid = (dropdownHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
                                                                     Console.WriteLine($"Found out-of-stock dropdown variation: {optionText}");
 
                                                                     itemDetails.Variations.Add(new Variation
@@ -641,7 +651,8 @@ namespace OOSWebScraper
                                                                         Name = optionText,
                                                                         Badge = "Out of Stock",
                                                                         IsOutOfStock = true,
-                                                                        UPID = upid, // Assuming UPID stays the same for dropdown variations
+                                                                        ParentUPID = itemDetails.UPID,
+                                                                        UPID = dropdownUpid, // Assuming UPID stays the same for dropdown variations
                                                                         StockStatus = "Out of Stock"
                                                                     });
                                                                 }
@@ -661,9 +672,35 @@ namespace OOSWebScraper
                                                         Console.WriteLine($"Error processing dropdown element: {ex.Message}");
                                                     }
                                                 }
+                                                await ClosePageAsync(dropdownPage);
+                                                dropdownPage = await CreatePageAsync(browser);
                                             }
                                             else if (variationElements.Any() && !comboDropListElements.Any())
                                             {
+                                                //sometimes parent item itself is oos
+                                                var outOfStockBadge = await itemPage.QuerySelectorAsync(_selectors.OutOfStockBadgeSelector);
+                                  
+                                                if (outOfStockBadge != null)
+                                                {
+                                                    Console.WriteLine($"OUT OF STOCK BADGE PRESENT: {outOfStockBadge}");
+                                                    var variationHref = await itemPage.EvaluateFunctionAsync<string>("() => window.location.href");
+                                                    var variationUpid = (variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
+                                                    var titleElement = await itemPage.QuerySelectorAsync("body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.product-option > ul > li.selected");
+                                                    var title = titleElement != null ? await titleElement.EvaluateFunctionAsync<string>("el => el.getAttribute('title')") : "Title not found";
+                                                    Console.WriteLine($"Found out-of-stock dropdown variation: {title} - ref (PARENT ITEM IS VARIATION)");
+
+                                                    itemDetails.Variations.Add(new Variation
+                                                    {
+                                                        Name = title,
+                                                        Badge = "Out of Stock",
+                                                        IsOutOfStock = true,
+                                                        ParentUPID = itemDetails.UPID,
+                                                        UPID = variationUpid, // Assuming UPID stays the same for dropdown variations
+                                                        StockStatus = "Out of Stock"
+                                                    });
+                                                    
+                                                }
+
                                                 Console.WriteLine("Variations found:");
                                                 foreach (var element in variationElements)
                                                 {
@@ -717,6 +754,7 @@ namespace OOSWebScraper
                                                                 Name = variationName,
                                                                 Badge = "Out of Stock",
                                                                 IsOutOfStock = true,
+                                                                ParentUPID = itemDetails.UPID,
                                                                 UPID = variationUpid,
                                                                 StockStatus = "Out of Stock"
                                                             });
@@ -784,6 +822,7 @@ namespace OOSWebScraper
                                                                     Name = assemblyName,
                                                                     Badge = "Out of Stock",
                                                                     IsOutOfStock = true,
+                                                                    ParentUPID = itemDetails.UPID,
                                                                     UPID = assemblyUpid,
                                                                     StockStatus = "Out of Stock"
                                                                 });
@@ -795,6 +834,9 @@ namespace OOSWebScraper
                                                         Console.WriteLine($"Error processing assembly option: {ex.Message}");
                                                     }
                                                 }
+
+                                                await ClosePageAsync(dropdownPage);
+                                                dropdownPage = await CreatePageAsync(browser);
                                                 isAssembly = true;
                                                 totalComboOutOfStockCount = assemblyOutOfStockCount;
                                                 totalComboCount = totalAssemblyCount;
@@ -839,7 +881,9 @@ namespace OOSWebScraper
 
                                 SaveCheckpoint(pageNumber, i, outOfStockItems.Count);
                                 SaveResults(outOfStockItems);
-
+                                // close browser to save resources.
+                                await ClosePageAsync(itemPage);
+                                itemPage = await CreatePageAsync(browser);
                                 Console.WriteLine($"Throttling for {_throttleDelay} milliseconds...");
                                 await Task.Delay(_throttleDelay + _random.Next(0, 1000));
 
@@ -858,7 +902,13 @@ namespace OOSWebScraper
                     Name: Next Page Navigation
                     Purpose: Navigates to the next page if it exists.
                     ************************************************************************************/
+                    await ClosePageAsync(itemPage);
+                    await ClosePageAsync(dropdownPage);
+                    await ClosePageAsync(innerDropdownPage);
 
+                    itemPage = await CreatePageAsync(browser);
+                    dropdownPage = await CreatePageAsync(browser);
+                    innerDropdownPage = await CreatePageAsync(browser);
                     if (hasNextPage && !string.IsNullOrEmpty(nextPageUrl))
                     {
                         Console.WriteLine($"Navigating to {nextPageUrl} (page {pageNumber})...");
@@ -900,8 +950,25 @@ namespace OOSWebScraper
             return outOfStockItems;
 
         }
+        /************************************************************************************
+        Name: NAVIGATION MANAGER
+        Purpose: Makes sure to free resources when navigation is not needed
+        ************************************************************************************/
+        private async Task<IPage> CreatePageAsync(IBrowser browser)
+        {
+            var page = await browser.NewPageAsync();
+            page.DefaultNavigationTimeout = 120000;
+            return page;
+        }
 
-
+        private async Task ClosePageAsync(IPage page)
+        {
+            if (page != null)
+            {
+                await page.CloseAsync();
+                await page.DisposeAsync();
+            }
+        }
         /************************************************************************************
         Name: SaveCheckpoint
         Purpose: Saves the current scraping state to a file to enable resuming later.

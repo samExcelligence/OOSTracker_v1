@@ -29,15 +29,24 @@ namespace OOSWebScrapper
                 CatalogSelectors selectors = null;
                 string catalogType = string.Empty;
 
-                Console.WriteLine("Select the catalog to scan:");
-                Console.WriteLine("***Discount School Supply (DSS) Catalogs***");
-                Console.WriteLine("1. Discount School Supply (DSS) Out of Stock Catalog");
-                Console.WriteLine("2. Discount School Supply (DSS) Combined New/Coming Soon/Clearance Catalog");
-                Console.WriteLine("***Really Good Stuff (RGS) Catalogs***");
-                Console.WriteLine("3. Really Good Stuff (RGS) Out of Stock Catalog");
-                Console.WriteLine("4. Really Good Stuff (RGS) Combined New/Coming Soon/Clearance Catalog");
+                if (args.Length == 0)
+                {
+                    Console.WriteLine("Please provide the catalog type as an argument.");
+                    Console.WriteLine("Usage: dotnet run -- <catalog_type>");
+                    Console.WriteLine("Catalog types: 1 (DSS_OutOfStock), 2 (DSS_Combined), 3 (RGS_OutOfStock), 4 (RGS_Combined)");
+                    return;
+                }
+                // for debugging uncomment this
+                //Console.WriteLine("Select the catalog to scan:");
+                //Console.WriteLine("***Discount School Supply (DSS) Catalogs***");
+                //Console.WriteLine("1. Discount School Supply (DSS) Out of Stock Catalog");
+                //Console.WriteLine("2. Discount School Supply (DSS) Combined New/Coming Soon/Clearance Catalog");
+                //Console.WriteLine("***Really Good Stuff (RGS) Catalogs***");
+                //Console.WriteLine("3. Really Good Stuff (RGS) Out of Stock Catalog");
+                //Console.WriteLine("4. Really Good Stuff (RGS) Combined New/Coming Soon/Clearance Catalog");
 
-                string choice = Console.ReadLine();
+                //string choice = Console.ReadLine();
+                string choice = args[0];
 
                 switch (choice)
                 {
@@ -170,7 +179,7 @@ namespace OOSWebScrapper
         private static void GenerateSingleReport(XLWorkbook workbook, List<OOSItemDetails> items, string sheetName)
         {
             var worksheet = workbook.Worksheets.Add(sheetName);
-            PopulateWorksheet(worksheet, items, false);
+            PopulateWorksheet(worksheet, items, true);
         }
 
         private static void GenerateCombinedReport(XLWorkbook workbook, List<OOSItemDetails> items, string catalogName)
