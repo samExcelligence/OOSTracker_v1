@@ -4,7 +4,6 @@ using OOSWebScrapper.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using PuppeteerSharp;
 
@@ -18,13 +17,19 @@ namespace OOSWebScrapper
         private readonly string _catalogType;
         private readonly Random _random = new Random();
         private const int MaxRetries = 3;
+        private readonly bool _isTestingMode;
+        private readonly int _testingItemsPerPage;
+        private readonly int _testingMaxPages;
 
-        public CombinedReportScraper(string chromePath, int throttleDelay, CatalogSelectors selectors, string catalogType)
+        public CombinedReportScraper(string chromePath, int throttleDelay, CatalogSelectors selectors, string catalogType, bool isTestingMode = false, int testingItemsPerPage = 3, int testingMaxPages = 3)
         {
             _chromePath = chromePath;
             _throttleDelay = throttleDelay;
             _selectors = selectors;
             _catalogType = catalogType;
+            _isTestingMode = isTestingMode;
+            _testingItemsPerPage = testingItemsPerPage;
+            _testingMaxPages = testingMaxPages;
         }
 
         public async Task<List<OOSItemDetails>> ScrapeCombinedItemsAsync(List<(string url, string badge, string stockStatus)> categories)
@@ -106,7 +111,7 @@ namespace OOSWebScrapper
                         try
                         {
                             var itemElements = await mainPage.QuerySelectorAllAsync(_selectors.ItemsSelector);
-                            int itemCount = itemElements.Count();
+                            int itemCount = _isTestingMode ? Math.Min(itemElements.Count(), _testingItemsPerPage) : itemElements.Count();
                             for (int i = 0; i < itemCount; i++)
                             {
                                 var itemElement = itemElements[i];
@@ -128,7 +133,7 @@ namespace OOSWebScrapper
                                     }
                                     else
                                     {
-                                        itemTitle = "no title found"; // Default case if needed
+                                        itemTitle = "no title found";
                                     }
 
                                     bool hasVariations;
@@ -143,7 +148,7 @@ namespace OOSWebScrapper
                                     }
                                     else
                                     {
-                                        hasVariations = false; // Default case if needed
+                                        hasVariations = false;
                                     }
                                     var position = i + 1;
 
@@ -185,7 +190,7 @@ namespace OOSWebScrapper
                                 }
                                 else
                                 {
-                                    upid = string.Empty; // Default case if needed
+                                    upid = string.Empty;
                                 }
 
                                 var itemDetails = new OOSItemDetails
@@ -245,7 +250,7 @@ namespace OOSWebScrapper
                                                 Console.WriteLine($"Failed to navigate to item URL after {maxAttempts} attempts.");
                                                 break;
                                             }
-                                            await Task.Delay(2000 * attempt); // Increasing delay with each attempt
+                                            await Task.Delay(2000 * attempt);
                                         }
                                     }
 
@@ -257,21 +262,6 @@ namespace OOSWebScrapper
                                         {
                                             var variationElements = await itemPage.QuerySelectorAllAsync("#priority1 > label");
                                             Console.WriteLine("Variations found:");
-
-                                            foreach (var element in variationElements)
-                                            {
-                                                var variationNameElement = await element.QuerySelectorAsync("span");
-                                                var variationName = variationNameElement != null ? await variationNameElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
-
-                                                var variationHrefElement = await element.QuerySelectorAsync("input[type='radio']");
-                                                var variationHref = variationHrefElement != null ? await variationHrefElement.EvaluateFunctionAsync<string>("el => el.value") : string.Empty;
-                                                var variationUpid = (variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
-
-                                                //Console.WriteLine($"Variation Name: {variationName}");
-                                                //Console.WriteLine($"Variation URL: {variationHref}");
-                                                //Console.WriteLine($"Variation UPID: {variationUpid}");
-                                                //Console.WriteLine(new string('-', 50));  // Separator line for better readability
-                                            }
 
                                             foreach (var element in variationElements)
                                             {
@@ -301,21 +291,6 @@ namespace OOSWebScrapper
                                         {
                                             var variationElements = await itemPage.QuerySelectorAllAsync(_selectors.VariationsSelector);
                                             Console.WriteLine("Variations found:");
-
-                                            foreach (var element in variationElements)
-                                            {
-                                                var variationNameElement = await element.QuerySelectorAsync("span");
-                                                var variationName = variationNameElement != null ? await variationNameElement.EvaluateFunctionAsync<string>("el => el.innerText") : string.Empty;
-
-                                                var variationHrefElement = await element.QuerySelectorAsync("a");
-                                                var variationHref = variationHrefElement != null ? await variationHrefElement.EvaluateFunctionAsync<string>("el => el.href") : string.Empty;
-                                                var variationUpid = (variationHref.Split(new[] { "/p/" }, StringSplitOptions.None).LastOrDefault() ?? string.Empty).TrimEnd('/');
-
-                                                //Console.WriteLine($"Variation Name: {variationName}");
-                                                //Console.WriteLine($"Variation URL: {variationHref}");
-                                                //Console.WriteLine($"Variation UPID: {variationUpid}");
-                                                //Console.WriteLine(new string('-', 50));  // Separator line for better readability
-                                            }
 
                                             foreach (var element in variationElements)
                                             {
@@ -355,7 +330,7 @@ namespace OOSWebScrapper
                                 Console.WriteLine($"Throttling for {_throttleDelay} milliseconds...");
                                 await Task.Delay(_throttleDelay + _random.Next(0, 1000));
 
-                                break; // Exit the retry loop on success
+                                break;
                             }
                             catch (Exception ex)
                             {
@@ -366,7 +341,13 @@ namespace OOSWebScrapper
                         }
                     }
 
-                    if (hasNextPage && !string.IsNullOrEmpty(nextPageUrl))
+                    pageNumber++;
+                    if (_isTestingMode && pageNumber >= _testingMaxPages)
+                    {
+                        hasNextPage = false;
+                        Console.WriteLine($"Reached maximum test pages ({_testingMaxPages}). Stopping scraping.");
+                    }
+                    else if (hasNextPage && !string.IsNullOrEmpty(nextPageUrl))
                     {
                         Console.WriteLine($"Navigating to {nextPageUrl} (page {pageNumber})...");
                         await mainPage.GoToAsync(nextPageUrl, new NavigationOptions
@@ -375,7 +356,6 @@ namespace OOSWebScrapper
                             WaitUntil = new[] { WaitUntilNavigation.DOMContentLoaded }
                         });
                         Console.WriteLine($"Successfully navigated to page {pageNumber}.");
-                        pageNumber++;
                         Console.WriteLine($"Throttling for {_throttleDelay} milliseconds...");
                         await Task.Delay(_throttleDelay + _random.Next(0, 1000));
                     }

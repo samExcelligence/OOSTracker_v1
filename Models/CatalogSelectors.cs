@@ -17,6 +17,14 @@ namespace OOSWebScrapper.Models
         public abstract string ItemVariationsSelector { get; }
         public abstract string ProductDetailsSelector { get; }
         public abstract string VariationsSelector { get; }
+        public abstract string DropListSelector { get; }
+        public abstract string ComboDropListSelector { get; }
+        public abstract string DropListVariationsSelector { get; }
+        public abstract string ComboDropListVariationsSelector { get; }
+        public abstract string VariationOutOfStockLabel_1 {get;}
+        public abstract string VariationOutOfStockLabel_2 { get; }
+        public abstract string AssemblyOptionSelector { get; }
+
     }
     public class DssCatalogSelectors : CatalogSelectors
     {
@@ -29,6 +37,13 @@ namespace OOSWebScrapper.Models
         public override string ItemVariationsSelector => "div.details-outer > div > div.colorswatch";
         public override string ProductDetailsSelector => "div.product-details";
         public override string VariationsSelector => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.product-option > ul > li";
+        public override string DropListSelector => "#priority1";
+        public override string ComboDropListSelector => "#priority2";
+        public override string VariationOutOfStockLabel_1 => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.qty-limited";
+        public override string VariationOutOfStockLabel_2 => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-image_container > div > div.carousel-main > div > div.badges > div";
+        public override string DropListVariationsSelector => "#priority1 > option";
+        public override string AssemblyOptionSelector => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.product-option > a";
+        public override string ComboDropListVariationsSelector => "#priority2 > option";
     }
     public class RgsCatalogSelectors : CatalogSelectors
     {
@@ -50,6 +65,14 @@ namespace OOSWebScrapper.Models
         public override string ProductDetailsSelector => "body > main > div.main__inner-wrapper.container-fluid > div.container.pdp-product-main > div.row.pdp-product-main-wrap > div.col-xs-12.col-sm-6.col-md-6.col-lg-5.right-content > div";
 
         public override string VariationsSelector => "#priority1";
+        public override string DropListSelector => "#priority1";
+        public override string ComboDropListSelector => "#priority2";
+        public override string VariationOutOfStockLabel_1 => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.qty-limited";
+
+        public override string VariationOutOfStockLabel_2 => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-image_container > div > div.carousel-main > div > div.badges > div";
+        public override string DropListVariationsSelector => "#priority1 > option";
+        public override string AssemblyOptionSelector => "body > main > div.container.main__inner-wrapper > div.row.product-details > div.col-sm-6.product-details__left > div > div.js-zoom-target > div.purchase > div.product-option > a";
+        public override string ComboDropListVariationsSelector => "#priority2 > option";
     }
 
 }

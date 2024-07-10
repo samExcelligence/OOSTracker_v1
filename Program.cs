@@ -17,6 +17,7 @@ namespace OOSWebScrapper
         {
             Stopwatch stopwatch = new Stopwatch(); // Create a new Stopwatch
             stopwatch.Start();
+
             try
             {
                 Console.WriteLine("Out of Stock Tracker");
@@ -90,6 +91,7 @@ namespace OOSWebScrapper
 
         static async Task RunSingleCatalogScraper(string chromePath, string targetUrl, CatalogSelectors selectors, string catalogType, string catalogName)
         {
+
             var throttleDelay = 1000;
             var scraper = new OutOfStockScraper(chromePath, targetUrl, throttleDelay, selectors, catalogType, catalogName);
             var outOfStockItems = await scraper.ScrapeOutOfStockItemsAsync();
@@ -98,8 +100,21 @@ namespace OOSWebScrapper
 
         static async Task RunCombinedCatalogScraper(string chromePath, CatalogSelectors selectors, string catalogType, string catalogName)
         {
+            // For testing mode:
+            bool isTestingMode = true;
+            int testingItemsPerPage = 3;
+            int testingMaxPages = 2;
             var throttleDelay = 1000;
-            var scraper = new CombinedReportScraper(chromePath, throttleDelay, selectors, catalogType);
+
+            var scraper = new CombinedReportScraper(
+                                                    chromePath,
+                                                    throttleDelay,
+                                                    selectors,
+                                                    catalogType,
+                                                    isTestingMode,
+                                                    testingItemsPerPage,
+                                                    testingMaxPages
+                                                );
 
             List<(string url, string badge, string stockStatus)> categories = new List<(string, string, string)>();
             if (catalogType == "DSS")
